@@ -39,11 +39,12 @@ type ReleaseHookFunc func(*rpb.Release) error
 
 // HelmOperatorReconciler reconciles custom resources as Helm releases.
 type HelmOperatorReconciler struct {
-	Client          client.Client
-	GVK             schema.GroupVersionKind
-	ManagerFactory  release.ManagerFactory
-	ReconcilePeriod time.Duration
-	releaseHook     ReleaseHookFunc
+	Client               client.Client
+	GVK                  schema.GroupVersionKind
+	ManagerFactory       release.ManagerFactory
+	ReconcilePeriod      time.Duration
+	releaseHook          ReleaseHookFunc
+	InjectStatusManifest bool
 }
 
 const (
@@ -199,9 +200,15 @@ func (r HelmOperatorReconciler) Reconcile(request reconcile.Request) (reconcile.
 			Reason:  types.ReasonInstallSuccessful,
 			Message: installedRelease.GetInfo().GetStatus().GetNotes(),
 		})
-		status.DeployedRelease = &types.HelmAppRelease{
-			Name:     installedRelease.Name,
-			Manifest: installedRelease.Manifest,
+		if r.InjectStatusManifest {
+			status.DeployedRelease = &types.HelmAppRelease{
+				Name:     installedRelease.Name,
+				Manifest: installedRelease.Manifest,
+			}
+		} else {
+			status.DeployedRelease = &types.HelmAppRelease{
+				Name: installedRelease.Name,
+			}
 		}
 		err = r.updateResourceStatus(o, status)
 		return reconcile.Result{RequeueAfter: r.ReconcilePeriod}, err
@@ -240,9 +247,15 @@ func (r HelmOperatorReconciler) Reconcile(request reconcile.Request) (reconcile.
 			Reason:  types.ReasonUpdateSuccessful,
 			Message: updatedRelease.GetInfo().GetStatus().GetNotes(),
 		})
-		status.DeployedRelease = &types.HelmAppRelease{
-			Name:     updatedRelease.Name,
-			Manifest: updatedRelease.Manifest,
+		if r.InjectStatusManifest {
+			status.DeployedRelease = &types.HelmAppRelease{
+				Name:     updatedRelease.Name,
+				Manifest: updatedRelease.Manifest,
+			}
+		} else {
+			status.DeployedRelease = &types.HelmAppRelease{
+				Name: updatedRelease.Name,
+			}
 		}
 		err = r.updateResourceStatus(o, status)
 		return reconcile.Result{RequeueAfter: r.ReconcilePeriod}, err
@@ -278,9 +291,15 @@ func (r HelmOperatorReconciler) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	log.Info("Reconciled release")
-	status.DeployedRelease = &types.HelmAppRelease{
-		Name:     expectedRelease.Name,
-		Manifest: expectedRelease.Manifest,
+	if r.InjectStatusManifest {
+		status.DeployedRelease = &types.HelmAppRelease{
+			Name:     expectedRelease.Name,
+			Manifest: expectedRelease.Manifest,
+		}
+	} else {
+		status.DeployedRelease = &types.HelmAppRelease{
+			Name: expectedRelease.Name,
+		}
 	}
 	err = r.updateResourceStatus(o, status)
 	return reconcile.Result{RequeueAfter: r.ReconcilePeriod}, err

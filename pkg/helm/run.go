@@ -94,13 +94,17 @@ func Run(flags *hoflags.HelmOperatorFlags) error {
 	var gvks []schema.GroupVersionKind
 	for _, w := range watches {
 		// Register the controller with the factory.
-		err := controller.Add(mgr, controller.WatchOptions{
-			Namespace:               namespace,
-			GVK:                     w.GroupVersionKind,
-			ManagerFactory:          release.NewManagerFactory(mgr, w.ChartDir),
-			ReconcilePeriod:         flags.ReconcilePeriod,
-			WatchDependentResources: w.WatchDependentResources,
-		})
+		err := controller.Add(
+			mgr,
+			controller.WatchOptions{
+				Namespace:               namespace,
+				GVK:                     w.GroupVersionKind,
+				ManagerFactory:          release.NewManagerFactory(mgr, w.ChartDir),
+				ReconcilePeriod:         flags.ReconcilePeriod,
+				WatchDependentResources: w.WatchDependentResources},
+			controller.FlagOptions{
+				InjectStatusManifest: flags.InjectStatusManifest,
+			})
 		if err != nil {
 			log.Error(err, "Failed to add manager factory to controller.")
 			return err

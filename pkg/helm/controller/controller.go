@@ -53,8 +53,13 @@ type WatchOptions struct {
 	WatchDependentResources bool
 }
 
+// FlagOptions contains optional helm operator flags
+type FlagOptions struct {
+	InjectStatusManifest bool
+}
+
 // Add creates a new helm operator controller and adds it to the manager
-func Add(mgr manager.Manager, options WatchOptions) error {
+func Add(mgr manager.Manager, options WatchOptions, flags FlagOptions) error {
 	r := &HelmOperatorReconciler{
 		Client:          mgr.GetClient(),
 		GVK:             options.GVK,
